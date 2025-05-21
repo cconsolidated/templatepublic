@@ -1,0 +1,5 @@
+[
+    { "path": "app/components/Footer.tsx", "content": "console.log(\"Hello World\")" },
+    { "path": "pages/api/hello.ts", "content": "export default (req, res) => res.json({ msg: 'Hi' })" }
+  ]
+  
