@@ -89,41 +89,60 @@ if [ -d /app/repo ]; then
   npm run build
   
   # Verify build output
-  if [ ! -d "dist" ]; then
-    echo "Error: Build output directory 'dist' not found"
+  if [ ! -d "build/client" ] || [ ! -d "build/server" ]; then
+    echo "Error: Build output directories 'build/client' and/or 'build/server' not found"
     exit 1
   fi
   
-  # Create project directory in S3 before syncing
-  echo "Creating project directory in S3..."
-  aws s3api put-object --bucket $S3_BUCKET_NAME --key "$PROJECT_ID/"
+  # Create project directories in S3 before syncing
+  echo "Creating project directories in S3..."
+  aws s3api put-object --bucket $S3_BUCKET_NAME --key "$PROJECT_ID/client/"
+  aws s3api put-object --bucket $S3_BUCKET_NAME --key "$PROJECT_ID/server/"
   
-  # Configure S3 bucket for public access
-  echo "Configuring S3 bucket for public access..."
+  # Configure S3 bucket for private access
+  echo "Configuring S3 bucket for private access..."
   aws s3api put-public-access-block \
     --bucket $S3_BUCKET_NAME \
-    --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+    --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
   
-  # Add bucket policy for public read access
-  echo "Adding bucket policy for public read access..."
+  # Create Origin Access Identity for CloudFront
+  echo "Creating CloudFront Origin Access Identity..."
+  OAI_RESPONSE=$(aws cloudfront create-cloud-front-origin-access-identity \
+    --cloud-front-origin-access-identity-config \
+    "CallerReference=$(date +%s),Comment=OAI for $PROJECT_ID")
+  
+  OAI_ID=$(echo "$OAI_RESPONSE" | jq -r '.CloudFrontOriginAccessIdentity.Id')
+  
+  # Add bucket policy for CloudFront access only
+  echo "Adding bucket policy for CloudFront access..."
   aws s3api put-bucket-policy \
     --bucket $S3_BUCKET_NAME \
     --policy "{
       \"Version\": \"2012-10-17\",
       \"Statement\": [
         {
-          \"Sid\": \"PublicReadGetObject\",
+          \"Sid\": \"AllowCloudFrontServicePrincipal\",
           \"Effect\": \"Allow\",
-          \"Principal\": \"*\",
+          \"Principal\": {
+            \"Service\": \"cloudfront.amazonaws.com\"
+          },
           \"Action\": \"s3:GetObject\",
-          \"Resource\": \"arn:aws:s3:::$S3_BUCKET_NAME/*\"
+          \"Resource\": \"arn:aws:s3:::$S3_BUCKET_NAME/*\",
+          \"Condition\": {
+            \"StringEquals\": {
+              \"AWS:SourceArn\": \"arn:aws:cloudfront::$(aws sts get-caller-identity --query Account --output text):distribution/*\"
+            }
+          }
         }
       ]
     }"
   
-  # Upload the built files to S3 with public-read ACL
-  echo "Uploading to S3..."
-  aws s3 sync ./dist s3://$S3_BUCKET_NAME/$PROJECT_ID/ --acl public-read
+  # Upload the built files to S3
+  echo "Uploading client files to S3..."
+  aws s3 sync ./build/client s3://$S3_BUCKET_NAME/$PROJECT_ID/client/
+  
+  echo "Uploading server files to S3..."
+  aws s3 sync ./build/server s3://$S3_BUCKET_NAME/$PROJECT_ID/server/
 else
   echo "No /app/repo directory, skipping build and deploy."
 fi
@@ -145,20 +164,28 @@ if [ "$DEPLOYED_URL" = "null" ] || [ -z "$DEPLOYED_URL" ]; then
   "Comment": "Public distribution for project $PROJECT_ID",
   "Enabled": true,
   "Origins": {
-    "Quantity": 1,
+    "Quantity": 2,
     "Items": [
       {
-        "Id": "S3-$S3_BUCKET_NAME",
+        "Id": "S3-Client-$S3_BUCKET_NAME",
         "DomainName": "$S3_BUCKET_NAME.s3.amazonaws.com",
-        "OriginPath": "/$PROJECT_ID",
+        "OriginPath": "/$PROJECT_ID/client",
         "S3OriginConfig": {
-          "OriginAccessIdentity": ""
+          "OriginAccessIdentity": "origin-access-identity/cloudfront/$OAI_ID"
+        }
+      },
+      {
+        "Id": "S3-Server-$S3_BUCKET_NAME",
+        "DomainName": "$S3_BUCKET_NAME.s3.amazonaws.com",
+        "OriginPath": "/$PROJECT_ID/server",
+        "S3OriginConfig": {
+          "OriginAccessIdentity": "origin-access-identity/cloudfront/$OAI_ID"
         }
       }
     ]
   },
   "DefaultCacheBehavior": {
-    "TargetOriginId": "S3-$S3_BUCKET_NAME",
+    "TargetOriginId": "S3-Client-$S3_BUCKET_NAME",
     "ViewerProtocolPolicy": "redirect-to-https",
     "AllowedMethods": {
       "Quantity": 2,
@@ -177,7 +204,45 @@ if [ "$DEPLOYED_URL" = "null" ] || [ -z "$DEPLOYED_URL" ]; then
     "MaxTTL": 31536000,
     "Compress": true
   },
-  "DefaultRootObject": "index.html"
+  "CacheBehaviors": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "PathPattern": "/api/*",
+        "TargetOriginId": "S3-Server-$S3_BUCKET_NAME",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "AllowedMethods": {
+          "Quantity": 3,
+          "Items": ["HEAD", "GET", "OPTIONS"],
+          "CachedMethods": {
+            "Quantity": 2,
+            "Items": ["HEAD", "GET"]
+          }
+        },
+        "ForwardedValues": {
+          "QueryString": true,
+          "Cookies": { "Forward": "all" },
+          "Headers": ["*"]
+        },
+        "MinTTL": 0,
+        "DefaultTTL": 0,
+        "MaxTTL": 0,
+        "Compress": true
+      }
+    ]
+  },
+  "DefaultRootObject": "index.html",
+  "CustomErrorResponses": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "ErrorCode": 403,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": 200,
+        "ErrorCachingMinTTL": 0
+      }
+    ]
+  }
 }
 EOF
 
