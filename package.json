@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "react-router build && supabase functions deploy",
+    "build": "./build.sh",
     "dev": "react-router dev",
     "start": "supabase functions serve",
     "typecheck": "react-router typegen && tsc"

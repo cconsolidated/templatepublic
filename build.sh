@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Build the React application
-npm run build
+# Set database to false by default unless already set
+: "${database:=false}"
+
+# Build the React application (directly, not via npm run build)
+react-router build
 
 # Transpile app/root.tsx to JS for the edge function
 npx esbuild app/root.tsx --bundle --platform=neutral --format=esm --outfile=supabase/functions/app/root.js
