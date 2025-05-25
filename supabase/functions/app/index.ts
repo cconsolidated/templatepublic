@@ -1,14 +1,25 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from '@supabase/supabase-js'
+// Conditionally import Supabase only if database is enabled
+// @ts-ignore
+const useDatabase = Deno.env.get('database') === 'true'
+let supabase = null
+if (useDatabase) {
+  const { createClient } = await import('@supabase/supabase-js')
+  // @ts-ignore
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  // @ts-ignore
+  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey)
+  }
+}
 import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom/server'
-import { App } from '../../app/root'
+import React from 'react'
+// @ts-ignore
+import { App } from './root.js'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-const supabase = createClient(supabaseUrl, supabaseKey)
-
-serve(async (req) => {
+serve(async (req: Request) => {
   const url = new URL(req.url)
   
   // Handle API routes
@@ -21,9 +32,11 @@ serve(async (req) => {
 
   // Serve the React application
   const html = renderToString(
-    <StaticRouter location={url.pathname}>
-      <App />
-    </StaticRouter>
+    React.createElement(
+      StaticRouter,
+      { location: url.pathname },
+      React.createElement(App)
+    )
   )
 
   return new Response(

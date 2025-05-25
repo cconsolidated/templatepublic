@@ -3,13 +3,19 @@
 # Build the React application
 npm run build
 
+# Transpile app/root.tsx to JS for the edge function
+npx esbuild app/root.tsx --bundle --platform=neutral --format=esm --outfile=supabase/functions/app/root.js
+
 # Create Supabase functions directory if it doesn't exist
 mkdir -p supabase/functions/app
 
 # Copy the built files to the Supabase functions directory
 cp -r build/* supabase/functions/app/
 
-# Deploy to Supabase
-supabase functions deploy app
-
-echo "Build and deployment completed!" 
+# Only deploy to Supabase if database is enabled
+if [ "$database" = "true" ]; then
+  supabase functions deploy app
+  echo "Build and deployment completed!"
+else
+  echo "Build completed! (Supabase deploy skipped because database=false)"
+fi 
