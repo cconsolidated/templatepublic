@@ -11,11 +11,8 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Make build script executable
-RUN chmod +x build.sh
-
 # Build the application
-RUN ./build.sh
+RUN npm run build
 
 # Start the application
 CMD ["npm", "start"]
