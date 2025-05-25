@@ -1,6 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+printfiles.py
+printoutput.json
 /node_modules
 /.pnp
 .pnp.*
