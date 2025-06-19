@@ -1,0 +1,200 @@
+[
+  {
+    "path": "index.tsx",
+    "content": "import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './components/App';\nimport './index.css';\n\nconst rootElement = document.getElementById('root');\nif (!rootElement) throw new Error('Failed to find the root element');\n\nconst root = ReactDOM.createRoot(rootElement);\nroot.render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);"
+  },
+  {
+    "path": "tsconfig.node.json",
+    "content": "{\n  \"compilerOptions\": {\n    \"composite\": true,\n    \"skipLibCheck\": true,\n    \"module\": \"ESNext\",\n    \"moduleResolution\": \"bundler\",\n    \"allowSyntheticDefaultImports\": true\n  },\n  \"include\": [\"vite.config.ts\"]\n} "
+  },
+  {
+    "path": "index.html",
+    "content": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>React App</title>\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/index.tsx\"></script>\n  </body>\n</html> "
+  },
+  {
+    "path": "tailwind.config.js",
+    "content": "/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  content: [\n    \"./index.html\",\n    \"./**/*.{js,ts,jsx,tsx}\",\n  ],\n  theme: {\n    extend: {},\n  },\n  plugins: [],\n} "
+  },
+  {
+    "path": "postcss.config.cjs",
+    "content": "module.exports = {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n}"
+  },
+  {
+    "path": "index.css",
+    "content": "@tailwind base;\n@tailwind components;\n@tailwind utilities; "
+  },
+  {
+    "path": "package.json",
+    "content": "{\n  \"name\": \"react-template\",\n  \"private\": true,\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\",\n    \"lint\": \"eslint . --ext .ts,.tsx\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  },\n  \"devDependencies\": {\n    \"@types/react\": \"^18.2.43\",\n    \"@types/react-dom\": \"^18.2.17\",\n    \"@typescript-eslint/eslint-plugin\": \"^6.21.0\",\n    \"@typescript-eslint/parser\": \"^6.21.0\",\n    \"@vitejs/plugin-react\": \"^4.2.1\",\n    \"autoprefixer\": \"^10.4.16\",\n    \"eslint\": \"^8.56.0\",\n    \"eslint-plugin-react\": \"^7.33.2\",\n    \"eslint-plugin-react-hooks\": \"^4.6.0\",\n    \"postcss\": \"^8.4.31\",\n    \"tailwindcss\": \"^3.3.5\",\n    \"typescript\": \"^5.2.2\",\n    \"vite\": \"^5.0.8\"\n  }\n}\n"
+  },
+  {
+    "path": "tsconfig.json",
+    "content": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2020\",\n    \"useDefineForClassFields\": true,\n    \"lib\": [\"ES2020\", \"DOM\", \"DOM.Iterable\"],\n    \"module\": \"ESNext\",\n    \"skipLibCheck\": true,\n    \"moduleResolution\": \"bundler\",\n    \"allowImportingTsExtensions\": true,\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"noEmit\": true,\n    \"jsx\": \"react-jsx\",\n    \"strict\": true,\n    \"noUnusedLocals\": true,\n    \"noUnusedParameters\": true,\n    \"noFallthroughCasesInSwitch\": true\n  },\n  \"include\": [\"**/*.ts\", \"**/*.tsx\"],\n  \"references\": [{ \"path\": \"./tsconfig.node.json\" }]\n} "
+  },
+  {
+    "path": "vite.config.ts",
+    "content": "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { resolve } from 'path';\n\nexport default defineConfig({\n  plugins: [react()],\n  build: {\n    outDir: 'build/client',\n    emptyOutDir: true,\n  },\n}); "
+  },
+  {
+    "path": "apis/example.ts",
+    "content": "// Example API functions\nexport const fetchData = async () => {\n  // Simulated API call\n  return new Promise((resolve) => {\n    setTimeout(() => {\n      resolve({ data: 'Example data' });\n    }, 1000);\n  });\n};\n\nexport const postData = async (data: any) => {\n  // Simulated API call\n  return new Promise((resolve) => {\n    setTimeout(() => {\n      resolve({ success: true, data });\n    }, 1000);\n  });\n}; "
+  },
+  {
+    "path": "components/App.tsx",
+    "content": "import React from 'react';\n\nfunction App() {\n  const [currentPage, setCurrentPage] = React.useState('home');\n  const [initialized, setInitialized] = React.useState(false);\n\n  // List of allowed pages\n  const allowedPages = ['home', 'about', 'contact'];\n\n  // Map file paths to page names\n  const getPageFromPath = (path: string) => {\n    // Extract the page name from the path\n    const fileName = path.split('/').pop()?.replace('.tsx', '').toLowerCase();\n    // Only return the page name if it's in our allowed list\n    return allowedPages.includes(fileName || '') ? fileName : 'home';\n  };\n\n  // Update current page when file changes\n  React.useEffect(() => {\n    const updatePageFromURL = () => {\n      if (window.location.search) {\n        const params = new URLSearchParams(window.location.search);
+        const file = params.get('file');\n        if (file) {\n          const pageName = getPageFromPath(file);
+          console.log('Setting page to:', pageName);
+          setCurrentPage(pageName);
+        }
+      }
+    };
+
+    // Initial update
+    updatePageFromURL();
+    setInitialized(true);
+
+    // Listen for URL changes
+    const handlePopState = () => {
+      updatePageFromURL();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Listen for messages from parent window
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'FILE_CHANGE') {
+        const pageName = getPageFromPath(event.data.file);
+        console.log('Received file change:', event.data.file, 'Setting page to:', pageName);
+        setCurrentPage(pageName);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Handle navigation button clicks
+  const handleNavigation = (page: string) => {
+    if (!allowedPages.includes(page)) {
+      console.error('Invalid page:', page);
+      return;
+    }
+    console.log('Navigation clicked:', page);
+    setCurrentPage(page);
+    
+    // Send message to parent window to handle navigation
+    window.parent.postMessage({
+      type: 'NAVIGATE',
+      page: page
+    }, '*');
+  };
+
+  function Home() {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-4xl font-bold mb-4">Welcome Home</h1>
+        <p className="text-gray-600 mb-6">
+          This is your starting point for building amazing React applications.
+        </p>
+      </div>
+    );
+  }
+
+  function About() {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-4xl font-bold mb-4">About Us</h1>
+        <p className="text-gray-600 mb-4">
+          Welcome to our React application.
+        </p>
+      </div>
+    );
+  }
+
+  function Contact() {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
+        <p className="text-gray-600 mb-6">
+          Have questions? We'd love to hear from you.
+        </p>
+      </div>
+    );
+  }
+
+  // Render the current page
+  const renderPage = () => {
+    if (!initialized) return null;
+    console.log('Rendering page:', currentPage);
+    switch (currentPage) {
+      case 'home':
+        return <Home />;
+      case 'about':
+        return <About />;
+      case 'contact':
+        return <Contact />;
+      default:
+        return <Home />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <nav className="bg-white shadow-md">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => handleNavigation('home')}
+              className="text-2xl font-bold text-blue-600"
+            >
+              React App
+            </button>
+            <div className="space-x-4">
+              <button
+                onClick={() => handleNavigation('home')}
+                className={`text-gray-600 hover:text-blue-600 ${currentPage === 'home' ? 'text-blue-600' : ''}`}
+              >
+                Home
+              </button>
+              <button
+                onClick={() => handleNavigation('about')}
+                className={`text-gray-600 hover:text-blue-600 ${currentPage === 'about' ? 'text-blue-600' : ''}`}
+              >
+                About
+              </button>
+              <button
+                onClick={() => handleNavigation('contact')}
+                className={`text-gray-600 hover:text-blue-600 ${currentPage === 'contact' ? 'text-blue-600' : ''}`}
+              >
+                Contact
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+      
+      <main className="container mx-auto px-4 py-8">
+        {renderPage()}
+      </main>
+    </div>
+  );
+}
+
+export default App;"
+  },
+  {
+    "path": "pages/Home.tsx",
+    "content": "import React from 'react';\n\nfunction Home() {\n  return (\n    <div className=\"container mx-auto px-4 py-8\">\n      <h1 className=\"text-4xl font-bold mb-4\">Welcome Home</h1>\n      <p className=\"text-gray-600\">This is a sample page component.</p>\n    </div>\n  );\n}\n\nexport default Home;"
+  },
+  {
+    "path": "pages/About.tsx",
+    "content": "import React from 'react';\n\nfunction About() {\n  return (\n    <div className=\"container mx-auto px-4 py-8\">\n      <h1 className=\"text-4xl font-bold mb-4\">About Us</h1>\n      <p className=\"text-gray-600\">Learn more about our company.</p>\n    </div>\n  );\n}\n\nexport default About;"
+  },
+  {
+    "path": "pages/Contact.tsx",
+    "content": "import React from 'react';\n\nfunction Contact() {\n  return (\n    <div className=\"container mx-auto px-4 py-8\">\n      <h1 className=\"text-4xl font-bold mb-4\">Contact Us</h1>\n      <p className=\"text-gray-600\">Get in touch with our team.</p>\n    </div>\n  );\n}\n\nexport default Contact;"
+  }
+]

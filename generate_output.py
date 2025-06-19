@@ -11,6 +11,7 @@ def should_ignore(path):
         '.DS_Store',
         'output.json',
         'generate_output.py',
+        'write_files.py',
         'package-lock.json'
     ]
     
@@ -45,9 +46,9 @@ def main():
                 "content": content
             })
     
-    # Write to output.json
+    # Write to output.json as an array of file objects
     with open('output.json', 'w', encoding='utf-8') as f:
-        json.dump({"files": file_list}, f, indent=2)
+        json.dump(file_list, f, indent=2)
 
 if __name__ == "__main__":
     main() 
